@@ -1,0 +1,540 @@
+  
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stonic-style Dashboard (Single File) — Tasks, Goals, Voice</title>
+<style>
+:root{
+  --bg:#060607; --card:#0f1113; --muted:#9aa0a6; --glass: rgba(255,255,255,0.03);
+  --accent:#1db954; --danger:#ff4d4f; --warning:#f0a500; --low:#2ecc71;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+html,body{height:100%;margin:0;background:
+  radial-gradient(circle at 10% 10%, rgba(0,255,255,0.02), transparent 5%),
+  linear-gradient(180deg,#040404 0%, #0b0c0d 100%);
+  color:#e6eef3;-webkit-font-smoothing:antialiased;}
+.app{display:flex;height:100vh;gap:18px;padding:18px;}
+/* Sidebar */
+.sidebar{width:84px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;display:flex;flex-direction:column;align-items:center;box-shadow:0 6px 24px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
+ .logo {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 12px;
+}
+
+.logo img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.7));
+  animation: glow 2.5s infinite alternate;
+}
+
+@keyframes glow {
+  from { filter: drop-shadow(0 0 8px rgba(0,200,255,0.5)); }
+  to   { filter: drop-shadow(0 0 20px rgba(150,0,255,0.9)); }
+}
+
+.icon-btn{width:48px;height:48px;border-radius:10px;background:var(--glass);display:flex;align-items:center;justify-content:center;margin:8px 0;color:var(--muted);cursor:pointer;border:1px solid rgba(255,255,255,0.03)}
+.icon-btn.active,.icon-btn:hover{color:#fff;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+.spacer{flex:1}
+.mic-on{box-shadow:0 0 18px rgba(29,185,84,0.18);border:1px solid rgba(29,185,84,0.18);color:#1db954}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;gap:18px}
+.header{display:flex;justify-content:space-between;align-items:center}
+.title{font-size:20px;font-weight:600;display:flex;align-items:center;gap:12px;color:#bfefff}
+.controls{display:flex;gap:10px;align-items:center}
+.btn{background:var(--glass);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;color:var(--muted);cursor:pointer}
+.btn.primary{background:linear-gradient(90deg,#0f1720,#0c1113);color:#dff7e6;border:1px solid rgba(255,255,255,0.04)}
+.panel{background:linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0.01));border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 28px rgba(2,6,10,0.6)}
+
+/* filters */
+.filters{display:flex;gap:12px;align-items:center;margin:8px 0}
+select.search,input.search{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;color:var(--muted)}
+input.search{min-width:260px}
+
+/* list */
+.list{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+.task-card{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02)}
+.left-check{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+.task-content{flex:1}
+.task-title{font-weight:700;font-size:15px;color:#fff}
+.task-desc{font-size:13px;color:var(--muted);margin-top:6px}
+.tag-row{display:flex;gap:10px;margin-top:10px;align-items:center}
+.priority{font-size:12px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);display:inline-flex;align-items:center;gap:8px}
+.priority.high{color:var(--danger);border-left:4px solid rgba(255,77,79,0.12)}
+.priority.medium{color:var(--warning);border-left:4px solid rgba(240,165,0,0.12)}
+.priority.low{color:var(--low);border-left:4px solid rgba(46,204,113,0.06)}
+.category{font-size:12px;color:var(--muted);padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
+.meta-icons{display:flex;gap:8px;align-items:center}
+.icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.02);cursor:pointer;color:var(--muted)}
+.due{font-size:12px;color:var(--muted)}
+
+/* fab */
+.add-fab{position:relative}
+.fab{width:48px;height:48px;border-radius:50%;background:linear-gradient(180deg,#228bff,#0a63d8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,0.06)}
+
+/* right col */
+.rightcol{width:340px;display:flex;flex-direction:column;gap:12px}
+.goal{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.02)}
+.progress{height:12px;background:rgba(255,255,255,0.03);border-radius:8px;overflow:hidden;margin-top:10px}
+.progress > b{display:block;height:100%}
+.progress .bar-low{background:linear-gradient(90deg,#2ecc71,#28b463)}
+.progress .bar-med{background:linear-gradient(90deg,#f0a500,#ffcf6b)}
+.progress .bar-high{background:linear-gradient(90deg,#ff4d4f,#ff7b7a)}
+
+/* modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{width:720px;background:linear-gradient(180deg,#0b0d0f,#0f1113);border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.03)}
+.form-row{display:flex;gap:10px;margin-top:10px}
+label{font-size:13px;color:var(--muted)}
+input,select,textarea{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:10px;border-radius:8px;color:#dfeef8;width:100%}
+textarea{min-height:80px;resize:vertical}
+.small{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+@media (max-width:980px){ .rightcol{display:none} .modal{width:90%} }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar panel" aria-hidden>
+   <div class="logo">
+  <img src="D:\ahsan\Zarvox AI\images\zarvox_logo.png" alt="zarvox.ai" />
+</div>
+
+    <div class="icon-btn active" title="Tasks" id="btnTasks">🗂️</div>
+    <div class="icon-btn" title="Goals" id="btnGoals">🎯</div>
+    <div class="icon-btn" title="Reminders" id="btnReminders">⏰</div>
+    <div class="spacer"></div>
+    <div class="icon-btn" id="micBtn" title="Voice (Add task/goal)">
+      <svg id="micIcon" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 11v1a7 7 0 0 1-14 0v-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 19v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="icon-btn" id="importBtn" title="Import/Export">⬆️</div>
+    <div class="icon-btn" id="settingsBtn" title="Settings">⚙️</div>
+  </aside>
+
+  <main class="main">
+    <div class="header">
+      <div class="title">📋 Tasks</div>
+      <div class="controls">
+        <input class="search" id="searchInput" placeholder="Search tasks or filter..." />
+        <select class="search" id="statusFilter">
+          <option value="all">All</option>
+          <option value="pending" selected>Pending</option>
+          <option value="completed">Completed</option>
+        </select>
+        <select class="search" id="priorityFilter">
+          <option value="all">Priorities</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <div class="add-fab"><div class="fab" id="openAdd">+</div></div>
+      </div>
+    </div>
+
+    <section class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="small muted">Manage your tasks. Use voice or manual add.</div>
+        <div class="small muted" id="counts"></div>
+      </div>
+
+      <div class="filters">
+        <select class="search" id="categoryFilter">
+          <option value="all">All Categories</option>
+          <option>study</option>
+          <option>personal</option>
+          <option>work</option>
+          <option>lab</option>
+          <option>learning</option>
+          <option>home</option>
+          <option>health</option>
+        </select>
+        <div class="small muted">Tip: say “Add task ... priority high category lab” or "task add karo ..."</div>
+      </div>
+
+      <div class="list" id="taskList"></div>
+    </section>
+  </main>
+
+  <aside class="rightcol">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">🎯 Goals</div>
+        <div class="small muted">Track progress</div>
+      </div>
+      <div id="goalsList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn" id="openAddGoal">Add Goal</button>
+        <button class="btn" id="exportBtn">Export JSON</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div style="font-weight:700">Reminders</div>
+      <div class="small muted" style="margin-top:6px">Browser notifications for due tasks (allow notifications).</div>
+      <div id="remindersList" style="margin-top:10px;display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- modal container -->
+<div id="modalRoot" style="display:none"></div>
+
+<script>
+/* ------------------------
+  Data & persistence
+   ------------------------*/
+const defaultCategories = ["study","personal","work","lab","learning","home","health"];
+let state = { tasks: [], goals: [] };
+
+function saveState(){ localStorage.setItem("stonic_dashboard_v1", JSON.stringify(state)); }
+function loadState(){ const raw = localStorage.getItem("stonic_dashboard_v1"); if(raw){ try{ state = JSON.parse(raw); }catch(e){ state = {tasks:[],goals:[]} } } }
+loadState();
+
+/* ------------------------
+  Utils
+   ------------------------*/
+function uid(p='id'){ return p + '_' + Math.random().toString(36).slice(2,9); }
+function fmtDate(d){ if(!d) return ''; const dt=new Date(d); if(isNaN(dt)) return ''; return dt.toLocaleDateString() + ' ' + dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+function clamp(n,min,max){ return Math.max(min,Math.min(max,n)); }
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+
+/* ------------------------
+  Rendering
+   ------------------------*/
+const taskListEl = document.getElementById('taskList');
+const countsEl = document.getElementById('counts');
+const goalsListEl = document.getElementById('goalsList');
+const remindersListEl = document.getElementById('remindersList');
+
+function render(){
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+  const priFilter = document.getElementById('priorityFilter').value;
+  const catFilter = document.getElementById('categoryFilter').value;
+
+  taskListEl.innerHTML = '';
+  let pending=0, completed=0;
+  const items = state.tasks.filter(t=>{
+    if(status==='pending' && t.completed) return false;
+    if(status==='completed' && !t.completed) return false;
+    if(priFilter!=='all' && t.priority !== priFilter) return false;
+    if(catFilter!=='all' && t.category !== catFilter) return false;
+    if(q && !( (t.title||'').toLowerCase().includes(q) || (t.desc||'').toLowerCase().includes(q) )) return false;
+    return true;
+  });
+
+  items.forEach(t=>{
+    if(t.completed) completed++; else pending++;
+    const card = document.createElement('div'); card.className='task-card';
+    const left = document.createElement('div'); left.className='left-check';
+    left.innerHTML = t.completed ? '✅' : '<input type="checkbox" />';
+    left.onclick = ()=>{ toggleComplete(t.id); };
+    const content = document.createElement('div'); content.className='task-content';
+    const title = document.createElement('div'); title.className='task-title'; title.textContent = t.title;
+    const desc = document.createElement('div'); desc.className='task-desc'; desc.textContent = t.desc || '';
+    const tagRow = document.createElement('div'); tagRow.className='tag-row';
+    const pri = document.createElement('div'); pri.className='priority ' + (t.priority || 'low'); pri.textContent = (t.priority || 'low').toUpperCase();
+    const cat = document.createElement('div'); cat.className='category'; cat.textContent = t.category || 'general';
+    const meta = document.createElement('div'); meta.className='meta-icons';
+    const due = document.createElement('div'); due.className='icon'; due.title='Set due date'; due.innerHTML = '📅';
+    due.onclick = (e)=>{ e.stopPropagation(); openDuePicker(t.id); };
+    const more = document.createElement('div'); more.className='icon'; more.innerHTML = '⋮';
+    more.onclick = (e)=>{ e.stopPropagation(); openEditTask(t.id); };
+    const dueText = document.createElement('div'); dueText.className='due'; dueText.textContent = t.due ? fmtDate(t.due) : '';
+
+    tagRow.appendChild(pri); tagRow.appendChild(cat); tagRow.appendChild(dueText);
+    meta.appendChild(due); meta.appendChild(more);
+
+    content.appendChild(title); content.appendChild(desc); content.appendChild(tagRow);
+    card.appendChild(left); card.appendChild(content); card.appendChild(meta);
+
+    if(t.priority==='high'){ card.style.borderLeft = '4px solid rgba(255,77,79,0.14)'; }
+    else if(t.priority==='medium'){ card.style.borderLeft = '4px solid rgba(240,165,0,0.12)'; }
+    else { card.style.borderLeft = '4px solid rgba(46,204,113,0.06)'; }
+
+    taskListEl.appendChild(card);
+  });
+
+  countsEl.textContent = `Pending: ${pending} • Completed: ${completed}`;
+
+  // Goals
+  goalsListEl.innerHTML = '';
+  if(state.goals.length===0){
+    const no = document.createElement('div'); no.className='small muted'; no.textContent='No goals yet';
+    goalsListEl.appendChild(no);
+  } else {
+    state.goals.forEach(g=>{
+      const el = document.createElement('div'); el.className='goal';
+      const head = document.createElement('div'); head.style.display='flex'; head.style.justifyContent='space-between';
+      const name = document.createElement('div'); name.textContent=g.title; name.style.fontWeight='700';
+      const editBtn = document.createElement('div'); editBtn.className='small muted'; editBtn.style.cursor='pointer'; editBtn.textContent='edit';
+      editBtn.onclick = ()=>{ openEditGoal(g.id); };
+      head.appendChild(name); head.appendChild(editBtn);
+
+      const desc = document.createElement('div'); desc.className='small muted'; desc.textContent = g.desc || '';
+      const progressWrap = document.createElement('div'); progressWrap.className='progress';
+      const bar = document.createElement('b'); bar.style.width = clamp(g.progress||0,0,100) + '%';
+      if(g.priority==='high') bar.className='bar-high'; else if(g.priority==='medium') bar.className='bar-med'; else bar.className='bar-low';
+      progressWrap.appendChild(bar);
+      const meta = document.createElement('div'); meta.className='small muted'; meta.style.marginTop='6px'; meta.textContent = `Progress: ${g.progress||0}% • ${g.category||'general'}`;
+      el.appendChild(head); el.appendChild(desc); el.appendChild(progressWrap); el.appendChild(meta);
+      goalsListEl.appendChild(el);
+    });
+  }
+
+  // reminders
+  remindersListEl.innerHTML = '';
+  const dueSoon = state.tasks.filter(t=>t.due && !t.completed && (new Date(t.due) > new Date()));
+  if(dueSoon.length===0){
+    const no = document.createElement('div'); no.className='small muted'; no.textContent='No upcoming reminders';
+    remindersListEl.appendChild(no);
+  } else {
+    dueSoon.slice(0,6).forEach(t=>{
+      const r = document.createElement('div'); r.className='small muted'; r.textContent = `${fmtDate(t.due)} — ${t.title}`;
+      remindersListEl.appendChild(r);
+    });
+  }
+
+  saveState();
+}
+
+/* ------------------------
+  CRUD Ops
+   ------------------------*/
+function addTask(task){
+  task.id = uid('task'); task.created = new Date().toISOString(); task.completed = false; state.tasks.unshift(task); render();
+}
+function updateTask(id, patch){ const t = state.tasks.find(x=>x.id===id); if(!t) return; Object.assign(t, patch); render(); }
+function toggleComplete(id){ const t = state.tasks.find(x=>x.id===id); if(!t) return; t.completed = !t.completed; render(); }
+function removeTask(id){ state.tasks = state.tasks.filter(x=>x.id!==id); render(); }
+
+function addGoal(g){ g.id = uid('goal'); g.progress = g.progress || 0; state.goals.unshift(g); render(); }
+function updateGoal(id, patch){ const g = state.goals.find(x=>x.id===id); if(!g) return; Object.assign(g, patch); render(); }
+function removeGoal(id){ state.goals = state.goals.filter(x=>x.id!==id); render(); }
+
+/* ------------------------
+  Modals
+   ------------------------*/
+const modalRoot = document.getElementById('modalRoot');
+function openModal(html){ modalRoot.innerHTML = `<div class="modal-backdrop">${html}</div>`; modalRoot.style.display='block'; }
+function closeModal(){ modalRoot.innerHTML=''; modalRoot.style.display='none'; }
+
+document.getElementById('openAdd').onclick = ()=> openAddTaskModal();
+document.getElementById('openAddGoal').onclick = ()=> openAddGoalModal();
+
+function openAddTaskModal(prefill={}){
+  openModal(`<div class="modal" role="dialog">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Add Task</div><div style="cursor:pointer" onclick="closeModal()">✕</div></div>
+    <div class="form-row" style="margin-top:12px"><div style="flex:1"><label>Title</label><input id="f_title" value="${escapeHtml(prefill.title||'')}" /></div><div style="width:160px"><label>Priority</label><select id="f_priority"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></div></div>
+    <div class="form-row" style="margin-top:8px"><div style="flex:1"><label>Category</label><select id="f_category">${defaultCategories.map(c=>`<option ${c===prefill.category?'selected':''}>${c}</option>`).join('')}</select></div><div style="width:220px"><label>Due (optional)</label><input id="f_due" type="datetime-local" /></div></div>
+    <div style="margin-top:8px"><label>Description</label><textarea id="f_desc">${escapeHtml(prefill.desc||'')}</textarea></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="addTaskConfirm">Add</button></div>
+  </div>`);
+  if(prefill.priority) document.getElementById('f_priority').value = prefill.priority;
+  if(prefill.due) document.getElementById('f_due').value = (new Date(prefill.due)).toISOString().slice(0,16);
+  document.getElementById('addTaskConfirm').onclick = ()=>{
+    const t = {
+      title: document.getElementById('f_title').value.trim() || 'Untitled Task',
+      desc: document.getElementById('f_desc').value.trim(),
+      priority: document.getElementById('f_priority').value,
+      category: document.getElementById('f_category').value,
+      due: document.getElementById('f_due').value ? new Date(document.getElementById('f_due').value).toISOString() : null
+    };
+    addTask(t); closeModal();
+  }
+}
+
+function openEditTask(id){
+  const t = state.tasks.find(x=>x.id===id); if(!t) return;
+  openModal(`<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Edit Task</div><div style="cursor:pointer" onclick="closeModal()">✕</div></div>
+    <div style="margin-top:8px"><label>Title</label><input id="e_title" value="${escapeHtml(t.title||'')}" />
+      <label style="margin-top:8px">Desc</label><textarea id="e_desc">${escapeHtml(t.desc||'')}</textarea>
+      <div class="form-row" style="margin-top:8px"><div style="flex:1"><label>Category</label><select id="e_category">${defaultCategories.map(c=>`<option ${c===t.category?'selected':''}>${c}</option>`).join('')}</select></div><div style="width:160px"><label>Priority</label><select id="e_priority"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></div></div>
+      <div style="margin-top:8px"><label>Due</label><input id="e_due" type="datetime-local" value="${t.due?new Date(t.due).toISOString().slice(0,16):''}" /></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn" onclick="removeTask('${t.id}')">Delete</button><button class="btn primary" id="saveTaskBtn">Save</button></div>
+    </div></div>`);
+  document.getElementById('e_priority').value = t.priority || 'low';
+  document.getElementById('saveTaskBtn').onclick = ()=>{
+    updateTask(t.id,{ title: document.getElementById('e_title').value.trim()||'Untitled Task', desc: document.getElementById('e_desc').value.trim(), category: document.getElementById('e_category').value, priority: document.getElementById('e_priority').value, due: document.getElementById('e_due').value ? new Date(document.getElementById('e_due').value).toISOString() : null });
+    closeModal();
+  }
+}
+
+function openDuePicker(id){
+  const t = state.tasks.find(x=>x.id===id); if(!t) return;
+  openModal(`<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Set Due Date</div><div style="cursor:pointer" onclick="closeModal()">✕</div></div><div style="margin-top:10px"><input id="d_date" type="datetime-local" value="${t.due?new Date(t.due).toISOString().slice(0,16):''}" /></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="saveDue">Save</button></div></div>`);
+  document.getElementById('saveDue').onclick = ()=>{
+    const v = document.getElementById('d_date').value;
+    updateTask(id,{ due: v? new Date(v).toISOString():null });
+    closeModal();
+  }
+}
+
+/* Goals */
+function openAddGoalModal(prefill={}){
+  openModal(`<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Add Goal</div><div style="cursor:pointer" onclick="closeModal()">✕</div></div>
+    <div style="margin-top:8px"><label>Title</label><input id="g_title" value="${escapeHtml(prefill.title||'')}" /><label style="margin-top:8px">Desc</label><textarea id="g_desc">${escapeHtml(prefill.desc||'')}</textarea>
+    <div class="form-row" style="margin-top:8px"><div style="flex:1"><label>Category</label><select id="g_cat">${defaultCategories.map(c=>`<option ${c===prefill.category?'selected':''}>${c}</option>`).join('')}</select></div><div style="width:160px"><label>Priority</label><select id="g_pri"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></div></div>
+    <div style="margin-top:8px"><label>Start progress %</label><input id="g_prog" type="number" value="${prefill.progress||0}" /></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn primary" id="saveGoalBtn">Add Goal</button></div></div></div>`);
+  document.getElementById('saveGoalBtn').onclick = ()=>{
+    const g = { title: document.getElementById('g_title').value.trim()||'Untitled Goal', desc: document.getElementById('g_desc').value.trim(), category: document.getElementById('g_cat').value, priority: document.getElementById('g_pri').value, progress: clamp(parseInt(document.getElementById('g_prog').value||'0'),0,100) };
+    addGoal(g); closeModal();
+  }
+}
+function openEditGoal(id){
+  const g = state.goals.find(x=>x.id===id); if(!g) return;
+  openModal(`<div class="modal"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Edit Goal</div><div style="cursor:pointer" onclick="closeModal()">✕</div></div>
+    <div style="margin-top:8px"><label>Title</label><input id="g_title" value="${escapeHtml(g.title||'')}" /><label style="margin-top:8px">Desc</label><textarea id="g_desc">${escapeHtml(g.desc||'')}</textarea>
+    <div class="form-row" style="margin-top:8px"><div style="flex:1"><label>Category</label><select id="g_cat">${defaultCategories.map(c=>`<option ${c===g.category?'selected':''}>${c}</option>`).join('')}</select></div><div style="width:160px"><label>Priority</label><select id="g_pri"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></div></div>
+    <div style="margin-top:8px"><label>Progress %</label><input id="g_prog" type="number" value="${g.progress||0}" /></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn" onclick="removeGoal('${g.id}')">Delete</button><button class="btn primary" id="saveGoalBtn">Save</button></div></div></div>`);
+  document.getElementById('g_pri').value = g.priority || 'low';
+  document.getElementById('saveGoalBtn').onclick = ()=>{
+    updateGoal(g.id,{ title: document.getElementById('g_title').value.trim()||'Untitled Goal', desc: document.getElementById('g_desc').value.trim(), category: document.getElementById('g_cat').value, priority: document.getElementById('g_pri').value, progress: clamp(parseInt(document.getElementById('g_prog').value||'0'),0,100) });
+    closeModal();
+  }
+}
+
+/* ------------------------
+  Voice (English + Roman-Urdu friendly)
+   ------------------------*/
+const micBtn = document.getElementById('micBtn');
+let recognition = null, listening = false;
+
+function setupSpeech(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){ micBtn.title = 'Voice not supported. Use Chrome.'; return; }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US'; // works ok for Roman-Urdu phrases (transcribed in Latin)
+  recognition.interimResults = false; recognition.maxAlternatives = 1;
+  recognition.onresult = (ev)=>{ const text = ev.results[0][0].transcript; console.log('Voice:', text); handleVoice(text); };
+  recognition.onend = ()=>{ listening=false; micBtn.classList.remove('mic-on'); };
+}
+setupSpeech();
+
+micBtn.onclick = ()=>{
+  if(!recognition){ alert('Voice not supported in this browser. Use Chrome.'); return; }
+  if(!listening){ recognition.start(); listening=true; micBtn.classList.add('mic-on'); }
+  else { recognition.stop(); listening=false; micBtn.classList.remove('mic-on'); }
+};
+
+function handleVoice(raw){
+  const t = raw.toLowerCase().trim();
+  // map common Roman-Urdu words to english to simplify parsing
+  const mapped = t.replace(/\b(karo|kar do|karlio|karlena|karlena)\b/g,'').replace(/\b( add karo|add kar|add)\b/g,'add').replace(/\b(task add|add task|new task|task)\b/g,'add task').replace(/\b(goal add|add goal|new goal|goal)\b/g,'add goal').replace(/\b(category|cat)\b/g,'category');
+  // handle commands
+  if(mapped.startsWith('add task')){
+    const payload = parseTaskPhrase(mapped.replace(/^add task\s*/,''));
+    addTask(payload); speak(`Task added: ${payload.title}`); return;
+  }
+  if(mapped.startsWith('add goal')){
+    const payload = parseTaskPhrase(mapped.replace(/^add goal\s*/,''));
+    addGoal({ title: payload.title, desc: payload.desc, priority: payload.priority, category: payload.category, progress:0 });
+    speak(`Goal added: ${payload.title}`); return;
+  }
+  if(mapped.includes('show goals') || t.includes('goals')){
+    document.getElementById('btnGoals').click(); speak('Showing goals'); return;
+  }
+  if(mapped.includes('show tasks') || t.includes('tasks')){
+    document.getElementById('btnTasks').click(); speak('Showing tasks'); return;
+  }
+
+  speak('Command not recognized. Say add task or add goal followed by details.');
+}
+
+/* parse phrases like:
+   "buy parts priority high category lab due 5 september"
+   or Roman-Urdu: "power station priority high category lab due 5 september"
+*/
+function parseTaskPhrase(s){
+  const out = { title:'Untitled', desc:'', priority:'low', category:'personal', due:null };
+  // priority
+  const priMatch = s.match(/\bpriority\s+(high|medium|low)\b/);
+  if(priMatch) out.priority = priMatch[1];
+  // category (look for "category X" or "in X")
+  for(const c of defaultCategories){
+    if(s.includes('category '+c) || s.includes(' in '+c) || s.includes(' '+c+' ' ) || s.endsWith(' '+c) ){
+      out.category = c; break;
+    }
+  }
+  // due - try to grab text after 'due'
+  const dueMatch = s.match(/\bdue\s+(.+)$/);
+  if(dueMatch){
+    const dateStr = dueMatch[1].trim();
+    const parsed = Date.parse(dateStr);
+    if(!isNaN(parsed)) out.due = new Date(parsed).toISOString();
+  }
+  // title cleanup: remove priority/category/due words and common urdu leftover words
+  let title = s.replace(/\bpriority\s+(high|medium|low)\b/,'').replace(/\bcategory\s+\w+\b/,'').replace(/\bdue\b.*/,'').replace(/\b(in|for|me|please|please)\b/g,'').replace(/\b(karo|kar do|add|task|goal|new)\b/g,'').trim();
+  if(title.length>0) out.title = title;
+  return out;
+}
+
+/* speak */
+function speak(text){
+  try{ if('speechSynthesis' in window){ const u=new SpeechSynthesisUtterance(text); window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); } }catch(e){}
+}
+
+/* ------------------------
+  Import / Export
+   ------------------------*/
+document.getElementById('importBtn').onclick = ()=>{ importData(); };
+document.getElementById('exportBtn').onclick = ()=>{ exportData(); };
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'stonic_data.json'; a.click(); URL.revokeObjectURL(url);
+}
+function importData(){
+  const input = document.createElement('input'); input.type='file'; input.accept='application/json';
+  input.onchange = (e)=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=(ev)=>{ try{ const data=JSON.parse(ev.target.result); state=data; saveState(); render(); alert('Imported OK'); }catch(err){ alert('Invalid JSON'); } }; r.readAsText(f); };
+  input.click();
+}
+
+/* ------------------------
+  Notifications checker
+   ------------------------*/
+function notifyIfDue(){
+  if(!("Notification" in window)) return;
+  if(Notification.permission !== 'granted') return;
+  const now = new Date();
+  state.tasks.forEach(t=>{
+    if(t.due && !t._notified && !t.completed){
+      const due = new Date(t.due);
+      if(due - now <= 60*1000 && due - now >= -60*1000){
+        new Notification('Task due: ' + t.title, {body: t.desc || '', silent: false});
+        t._notified = true; saveState();
+      }
+    }
+  });
+}
+setInterval(notifyIfDue, 20*1000);
+
+/* ------------------------
+  Wiring & events
+   ------------------------*/
+document.getElementById('statusFilter').onchange = render;
+document.getElementById('priorityFilter').onchange = render;
+document.getElementById('categoryFilter').onchange = render;
+document.getElementById('searchInput').oninput = render;
+document.getElementById('btnTasks').onclick = ()=>{ document.querySelector('.title').textContent='📋 Tasks'; document.getElementById('btnTasks').classList.add('active'); document.getElementById('btnGoals').classList.remove('active'); };
+document.getElementById('btnGoals').onclick = ()=>{ document.querySelector('.title').textContent='🎯 Goals'; document.getElementById('btnGoals').classList.add('active'); document.getElementById('btnTasks').classList.remove('active'); };
+window.openEditTask = openEditTask; // safe export
+
+/* notification permission helper */
+document.getElementById('settingsBtn').onclick = async ()=>{
+  if("Notification" in window){ const res = await Notification.requestPermission(); alert('Notification permission: ' + res); } else alert('Notifications not supported in this browser');
+};
+
+/* start render */
+render();
+</script>
+</body>
+</html>
